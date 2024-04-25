@@ -8,6 +8,9 @@ from utils import setup, read_vocab, Tokenizer, set_tb_logger, is_experiment, pa
 from trainer import PanoSeq2SeqTrainer
 from agents import PanoSeq2SeqAgent
 from models import EncoderRNN, SelfMonitoring, SpeakerFollowerBaseline, Regretful
+import os
+
+# os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 
 parser = argparse.ArgumentParser(description='PyTorch for Matterport3D Agent with panoramic view and action')
@@ -29,13 +32,13 @@ parser.add_argument('--img_feat_dir', default='img_features/ResNet-152-imagenet.
 
 # Training options
 parser.add_argument('--start_epoch', default=1, type=int)
-parser.add_argument('--batch_size', default=4, type=int)
+parser.add_argument('--batch_size', default=64, type=int)
 parser.add_argument('--learning_rate', default=1e-4, type=float)
 parser.add_argument('--train_iters_epoch', default=200, type=int,
                     help='number of iterations per epoch')
 parser.add_argument('--max_num_epochs', default=300, type=int,
                     help='number of total epochs to run')
-parser.add_argument('--eval_every_epochs', default=1, type=int,
+parser.add_argument('--eval_every_epochs', default=5, type=int,
                     help='how often do we eval the trained model')
 parser.add_argument('--patience', default=3, type=int,
                     help='Number of epochs with no improvement after which learning rate will be reduced.')
@@ -111,7 +114,7 @@ parser.add_argument('--reversed', default=1, type=int,
 parser.add_argument('--lang_embed', default='lstm', type=str, help='options: lstm ')
 parser.add_argument('--word_embedding_size', default=256, type=int,
                     help='default embedding_size for language encoder.')
-parser.add_argument('--rnn_hidden_size', default=256, type=int)
+parser.add_argument('--rnn_hidden_size', default=512, type=int)
 parser.add_argument('--bidirectional', default=0, type=int)
 parser.add_argument('--rnn_num_layers', default=1, type=int)
 parser.add_argument('--rnn_dropout', default=0.5, type=float)
@@ -190,10 +193,15 @@ def main(opts):
     print(model)
 
     encoder = encoder.to(device)
+
     model = model.to(device)
+
+    print(f"loaded model and encoder to device {device}")
 
     params = list(encoder.parameters()) + list(model.parameters())
     optimizer = torch.optim.Adam(params, lr=opts.learning_rate)
+
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.5)
 
     # optionally resume from a checkpoint
     if opts.resume:
@@ -261,6 +269,11 @@ def main(opts):
     tb_logger = set_tb_logger(opts.log_dir, opts.exp_name, opts.resume)
 
     best_success_rate = best_success_rate if opts.resume else 0.0
+
+    no_progress = 0
+    progress_thresh = 1e-2
+    moving_ave = best_success_rate if opts.resume else 0.0
+
     for epoch in range(opts.start_epoch, opts.max_num_epochs + 1):
         trainer.train(epoch, train_env, tb_logger)
 
@@ -270,12 +283,23 @@ def main(opts):
                 success_rate.append(trainer.eval(epoch, val_env, tb_logger))
 
             success_rate_compare = success_rate[1]
+            
+            # if success_rate_compare-moving_ave < progress_thresh:
+            #     no_progress += 1
+            # else:
+            #     no_progress = 0
+
+            # if no_progress >= opts.patience:
+            #     lr_scheduler.step()
+
+            # moving_ave = 0.9*moving_ave + 0.1*success_rate_compare
 
             if is_experiment():
                 # remember best val_seen success rate and save checkpoint
                 is_best = success_rate_compare >= best_success_rate
                 best_success_rate = max(success_rate_compare, best_success_rate)
                 print("--> Highest val_unseen success rate: {}".format(best_success_rate))
+                # print(f"--> No progress Counter: {no_progress}")
 
                 # save the model if it is the best so far
                 save_checkpoint({

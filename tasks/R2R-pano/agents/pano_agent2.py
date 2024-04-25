@@ -17,9 +17,6 @@ class PanoBaseAgent(object):
         self.results_path = results_path
         random.seed(1)
         self.results = {}
-
-        #Search Frontier
-        self.frontier = {}
     
     def write_results(self):
         output = []
@@ -162,9 +159,19 @@ class PanoBaseAgent(object):
             visited_navi_idx_tmp = []
             visited_viewpoints_tmp = []
 
+            #next ground truth viewpoint in list of observations to goal
             gt_viewpoint_id, viewpoint_idx = ob['gt_viewpoint_idx']
             # print("gt", gt_viewpoint_id, viewpoint_idx)
             current_viewpoint = ob['viewpoint']
+
+            if i==0:
+
+                print(ob['navigableLocations'])
+
+            #During Training Only
+            for frontier_locations in self.frontier[i]:
+                if current_viewpoint in self.frontier[i][frontier_locations]:
+                    self.frontier[i][frontier_locations] = ob["navigableLocations"]
 
             for j, viewpoint_id in enumerate(ob['navigableLocations']):
 
@@ -173,7 +180,7 @@ class PanoBaseAgent(object):
                 viewpoints_tmp.append(viewpoint_id)
 
                 if viewpoint_id == gt_viewpoint_id:
-                    # if it's already ended, we label the target as <ignore>
+                    # if it's already ended (the goal), we label the target as <ignore>
                     if ended[i] and self.opts.use_ignore_index:
                         target_index.append(self.ignore_index)
                     else:
@@ -248,6 +255,9 @@ class PanoSeq2SeqAgent(PanoBaseAgent):
 
         self.MSELoss = nn.MSELoss()
         self.MSELoss_sum = nn.MSELoss(reduction='sum')
+
+        #Search Frontier
+        self.frontier = []
 
     def get_value_loss_from_start(self, traj, predicted_value, ended):
         """
@@ -379,6 +389,8 @@ class PanoSeq2SeqAgent(PanoBaseAgent):
     def rollout_regret(self):
         obs = np.array(self.env.reset())  # load a mini-batch
         batch_size = len(obs)
+
+        print(obs[0])
 
         seq, seq_lengths = super(PanoSeq2SeqAgent, self)._sort_batch(obs)
         ctx, h_t, c_t, ctx_mask = self.encoder(seq, seq_lengths)

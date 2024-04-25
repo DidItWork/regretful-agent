@@ -7,6 +7,7 @@
 
 #include <json/json.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 #include "Catch.hpp"
 #include "MatterSim.hpp"
@@ -324,13 +325,14 @@ TEST_CASE( "RGB Image", "[Rendering]" ) {
 
         SimStatePtr state = sim.getState();
         auto reference_image = cv::imread("webgl_imgs/"+imgfile);
+        // std::cout << reference_image << std::endl;
         cv::imwrite("sim_imgs/"+imgfile, state->rgb); // save for later comparison
         
-        //cv::imshow("WebGL", reference_image);
-        //cv::imshow("MatterSim", state->rgb);
-        //int key = cv::waitKey(100);
+        // cv::imshow("WebGL", reference_image);
+        // cv::imshow("MatterSim", state->rgb);
+        // int key = cv::waitKey(10000);
         
-        double err = cv::norm(reference_image, state->rgb, CV_L2);
+        double err = cv::norm(reference_image, state->rgb);
         err /= reference_image.rows * reference_image.cols;
         CHECK(err < 0.15);
     }

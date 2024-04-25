@@ -5,6 +5,8 @@ option(OSMESA_RENDERING "Render offscreen with OSMesa" OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
+set(OpenGL_GL_PREFERENCE GLVND)
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -37,7 +39,7 @@ target_include_directories(tests PRIVATE ${JSONCPP_INCLUDE_DIRS})
 target_link_libraries(tests MatterSim ${JSONCPP_LIBRARIES} ${OpenCV_LIBS})
 
 add_executable(mattersim_main src/driver/mattersim_main.cpp)
-target_link_libraries(mattersim_main MatterSim)
+target_link_libraries(mattersim_main MatterSim ${GL_LIBS})
 
 add_executable(random_agent src/driver/random_agent.cpp)
 target_link_libraries(random_agent MatterSim)

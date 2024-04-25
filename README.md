@@ -120,6 +120,7 @@ Check the official [PyTorch website](http://pytorch.org/) for different CUDA ver
 ```
 # with CUDA 10
 conda install pytorch torchvision cuda100 -c pytorch
+conda install pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 -c pytorch
 
 # MacOS without GPU
 conda install pytorch torchvision -c pytorch
