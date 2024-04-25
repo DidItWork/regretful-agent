@@ -164,16 +164,19 @@ class PanoBaseAgent(object):
             # print("gt", gt_viewpoint_id, viewpoint_idx)
             current_viewpoint = ob['viewpoint']
 
-            if i==0:
+            if is_training and self.opts.use_frontier:
+                for frontier_vps in self.frontier[i]:
+                    if frontier_vps != current_viewpoint and frontier_vps not in ob["navigableLocations"]:
+                        ob["navigableLocations"][frontier_vps]=self.frontier[i][frontier_vps]
+                
+                self.frontier[i] = ob["navigableLocations"].copy()
+            else:
+                self.frontier[i] = ob["navigableLocations"]
 
-                print(ob['navigableLocations'])
+            for j, viewpoint_id in enumerate(self.frontier[i]):
 
-            #During Training Only
-            for frontier_locations in self.frontier[i]:
-                if current_viewpoint in self.frontier[i][frontier_locations]:
-                    self.frontier[i][frontier_locations] = ob["navigableLocations"]
-
-            for j, viewpoint_id in enumerate(ob['navigableLocations']):
+                if j >= self.opts.max_navigable:
+                    break
 
                 viewpoint_navi_index = int(ob['navigableLocations'][viewpoint_id]['index'])
                 index_list.append(viewpoint_navi_index)
@@ -390,7 +393,7 @@ class PanoSeq2SeqAgent(PanoBaseAgent):
         obs = np.array(self.env.reset())  # load a mini-batch
         batch_size = len(obs)
 
-        print(obs[0])
+        self.frontier = [{} for b in range(batch_size)]
 
         seq, seq_lengths = super(PanoSeq2SeqAgent, self)._sort_batch(obs)
         ctx, h_t, c_t, ctx_mask = self.encoder(seq, seq_lengths)

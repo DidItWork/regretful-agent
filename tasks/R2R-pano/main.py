@@ -83,6 +83,8 @@ parser.add_argument('--fix_action_ended', default=1, type=int,
                     help='Action set to 0 if ended. This prevent the model keep getting loss from logit after ended')
 parser.add_argument('--monitor_sigmoid', default=0, type=int,
                     help='Use Sigmoid function for progress monitor instead of Tanh')
+parser.add_argument('--use_frontier', default=0, type=int,
+                    help='Keep search frontier')
 
 # Agent rollback options
 parser.add_argument('--prevent_oscillation', default=1, type=int,

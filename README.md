@@ -43,6 +43,8 @@ sudo apt-get install libopencv-dev python-opencv freeglut3 freeglut3-dev libglm-
 
 For installing dependencies on MacOS, please refer to [Installation on MacOS](install_macOS.md).
 
+Follow this [guide](https://docs.opencv.org/4.x/db/d05/tutorial_config_reference.html) to build OpenCV with OpenGL support (-DWITH_OPENGL ON) if you run into issues with OpenGL and OpenCV during tests.
+
 ### Clone Repo
 Clone the Regretful Agent repository:
 ```
@@ -104,7 +106,7 @@ Now that you have cloned the repo and download the image features needed. Let us
 ### Create Anaconda enviorment
 ```bash
 # change "r2r" to any name you prefer, e.g., r2r-pytorch
-conda create -n r2r python=3.6
+conda create -n r2r python=3.8
 ```
 Activate the enviorment you just created
 ```
@@ -118,6 +120,10 @@ pip install -r tasks/R2R-pano/requirements.txt
 ### Install PyTorch for your Conda Env
 Check the official [PyTorch website](http://pytorch.org/) for different CUDA version.
 ```
+# with CUDA 11.8 (For RTX 40 Series graphics cards)
+
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+
 # with CUDA 10
 conda install pytorch torchvision cuda100 -c pytorch
 conda install pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 -c pytorch
@@ -204,6 +210,21 @@ CUDA_VISIBLE_DEVICES=0 python tasks/R2R-pano/main.py \
     --progress_marker 1
 ```
 
+To use search frontier during training, set `use_frontier` to 1
+
+```bash
+# the regretful agent train on real data
+CUDA_VISIBLE_DEVICES=0 python tasks/R2R-pano/main.py \
+    --exp_name 'regretful-agent-data|real_frontier' \
+    --batch_size 64 \
+    --img_fc_dim 1024 \
+    --rnn_hidden_size 512 \
+    --eval_every_epochs 5 \
+    --arch 'regretful' \
+    --progress_marker 1 \
+    --use_frontier 1
+```
+
 #### Train on synthetic data & finetune on real data
 Pre-train on synthetic data
 ```bash
@@ -242,6 +263,12 @@ cd tensorboard_logs/
 tensorboard --logdir=pano-seq2seq
 ```
 
+#### Results
+
+<p align="center">
+<img src="teaser/results.png" width="70%">
+</p>
+
 #### Reproducibility
 Note that our results were originally produced using PyTorch 0.4.1 on a Titan Xp GPU. You may get slightly different results due to using different PyTorch versions, different GPUs, or different hyper-parameters.
 The overall performance should be fairly robust even with different random seeds. You should still get around 47-48% success rate on the validation seen dataset.
@@ -250,6 +277,7 @@ Training usually take around 10 hrs.
 
 <p align="center">
 <img src="teaser/tb-training.png" width="100%">
+<img src="teaser/frontier-training.png" width="100%">
 </p>
 
 ## Acknowledgments
